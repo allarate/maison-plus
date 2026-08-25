@@ -1,79 +1,109 @@
 import streamlit as st
-import sys, os
+import sys, os, json
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from layout import layout
-from database import get_stats
+from database import get_annonces_validees
+from theme import COLORS
+from interet_widget import interest_button
+
+
+def _first_photo_url(photos_json):
+    try:
+        photos = json.loads(photos_json) if photos_json else []
+    except Exception:
+        photos = []
+    return photos[0] if photos else None
+
 
 def show():
     def content():
         st.markdown("""
             <style>
-            .stApp { background-color: #f0f2f6; }
-            h1 { text-align: center; color: #1a1a2e; font-size: 2rem; }
-            div[data-testid="stButton"] button {
-                border-radius: 12px;
-                font-size: 15px;
-                font-weight: 600;
+            h1 { text-align: center; color: var(--color-primary); font-size: 2rem; }
+
+            @keyframes fadeInUp {
+                from { opacity: 0; transform: translateY(18px); }
+                to   { opacity: 1; transform: translateY(0); }
+            }
+            .house-card {
+                background: var(--color-surface);
+                border-radius: 14px;
+                overflow: hidden;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+                animation: fadeInUp 0.6s ease both;
+                transition: box-shadow 0.25s ease;
+                margin-bottom: 0.8rem;
+            }
+            .house-card:hover {
+                box-shadow: 0 14px 28px rgba(0,0,0,0.18);
+            }
+            .house-card .photo {
                 width: 100%;
-                height: 90px;
-                background-color: #1a1a2e;
-                color: white;
-                border: none;
-                transition: all 0.3s;
+                height: 170px;
+                object-fit: cover;
+                display: block;
+                transition: transform 0.4s ease;
             }
-            div[data-testid="stButton"] button:hover { background-color: #4A90E2; }
-            .admin-btn button {
-                background-color: #e67e22 !important;
-                height: auto !important;
-                padding: 12px !important;
+            .house-card:hover .photo { transform: scale(1.06); }
+            .house-card .photo-placeholder {
+                width: 100%;
+                height: 170px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 2.5rem;
+                background: linear-gradient(135deg, #e9ecf5, #dfe3f0);
             }
-            .admin-btn button:hover { background-color: #d35400 !important; }
+            .house-card .info { padding: 0.9rem 1rem; }
+            .house-card h4 { margin: 0 0 0.3rem 0; color: var(--color-primary); font-size: 1rem; }
+            .house-card .meta { margin: 0; color: var(--color-text-muted); font-size: 0.82rem; }
+            .house-card .price { margin: 0.4rem 0 0 0; color: var(--color-primary-light); font-weight: 700; }
             </style>
         """, unsafe_allow_html=True)
 
-        col_l, col_c, col_r = st.columns([1, 3, 1])
+        col_l, col_c, col_r = st.columns([1, 4, 1])
         with col_c:
             st.title("Accueil")
-            nom    = st.session_state.get("nom", "")
-            prenom = st.session_state.get("prenom", "")
-            st.subheader(f"Bienvenue {prenom} {nom} ")
-
             role = st.session_state.get("role", "user")
             if role == "admin":
                 st.markdown("🔴 **Compte Administrateur**")
 
             st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("### Maisons disponibles")
 
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                if st.button("Rechercher\nune maison en location", use_container_width=True):
-                    st.session_state.page = "recherche"
-                    st.rerun()
-            with col2:
-                if st.button(" Mettre une maison\nen location", use_container_width=True):
-                    st.session_state.page = "mise_en_location"
-                    st.rerun()
-            with col3:
-                if st.button("IA Ready", use_container_width=True):
-                    st.session_state.page = "ia"
-                    st.rerun()
+            annonces = get_annonces_validees()[:6]
 
-            st.markdown("<br>", unsafe_allow_html=True)
+            if not annonces:
+                st.info("Aucune annonce disponible pour le moment.")
+            else:
+                for row_start in range(0, len(annonces), 3):
+                    row = annonces[row_start:row_start + 3]
+                    row_cols = st.columns(3)
+                    for i, a in enumerate(row):
+                        with row_cols[i]:
+                            url = _first_photo_url(a["photos"])
+                            if url:
+                                media = f'<img class="photo" src="{url}" alt="Photo de {a["titre"]}" />'
+                            else:
+                                media = '<div class="photo-placeholder"></div>'
+                            quartier_txt = f' — {a["quartier"]}' if a["quartier"] else ''
+                            st.markdown(
+                                f'<div class="house-card" style="animation-delay:{(row_start + i) * 0.08:.2f}s">'
+                                f'{media}'
+                                f'<div class="info">'
+                                f'<h4>{a["titre"]}</h4>'
+                                f'<p class="meta">📍 {a["ville"]}{quartier_txt} &nbsp;|&nbsp; {a["chambres"]} ch.</p>'
+                                f'<p class="price">{int(a["prix"]):,} FCFA / mois</p>'
+                                f'</div></div>',
+                                unsafe_allow_html=True,
+                            )
+                            interest_button(a["id"], "home")
 
-            col_a, col_b = st.columns(2)
-            with col_a:
-                if st.button("Les annonces", use_container_width=True):
-                    st.session_state.page = "mes_annonces"
-                    st.rerun()
-            if role == "admin":
-                with col_b:
-                    stats = get_stats()
-                    en_attente = stats["en_attente"]
-                    label = "⚙️ Administration" + (f" 🔴 {en_attente}" if en_attente > 0 else "")
-                    st.markdown('<div class="admin-btn">', unsafe_allow_html=True)
-                    if st.button(label, use_container_width=True):
-                        st.session_state.page = "admin"
+                st.markdown("<br>", unsafe_allow_html=True)
+                col1, col2, col3 = st.columns([1, 2, 1])
+                with col2:
+                    if st.button("Voir toutes les annonces", use_container_width=True):
+                        st.session_state.page = "recherche"
                         st.rerun()
-                    st.markdown('</div>', unsafe_allow_html=True)
 
     layout(content)

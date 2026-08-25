@@ -1,8 +1,7 @@
 import streamlit as st
 
 st.set_page_config(
-    page_title="FaxUdm",
-    page_icon="🏠",
+    page_title="Maison++",
     layout="wide",
     initial_sidebar_state="collapsed"
 )

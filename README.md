@@ -1,9 +1,9 @@
-# FaxUdm — Application de location immobilière
+# Maison++ — Application de location immobilière
 
 ## Structure du projet
 
 ```
-FaxUdm/
+Maison++/
 ├── app.py                  # Point d'entrée Streamlit
 ├── main.py                 # Routeur de pages
 ├── auth.py                 # Authentification (login/register)
@@ -23,7 +23,7 @@ FaxUdm/
 ## Installation
 
 ```bash
-pip install streamlit
+pip install -r requirements.txt
 ```
 
 ## Lancement
@@ -34,5 +34,5 @@ streamlit run app.py
 
 ## Compte par défaut
 
-- **Utilisateur** : admin@faxudm.cm
+- **Téléphone** : +23500000000 (Tchad)
 - **Mot de passe** : admin123

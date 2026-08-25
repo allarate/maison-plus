@@ -1,14 +1,13 @@
-from database import get_user_by_email, create_user
+from database import get_user_by_phone, create_user
+from phone import is_valid_phone
 
-def login(email, password):
-    user = get_user_by_email(email)
+def login(telephone, password):
+    user = get_user_by_phone(telephone)
     if user and user["password"] == password:
-        return True, user["role"], user["nom"], user["prenom"]
-    return False, None, None, None
+        return True, user["role"], user["nom"], user["prenom"], user["photo"]
+    return False, None, None, None, None
 
-def register(nom, prenom, email, password):
-    return create_user(nom, prenom, email, password, role="user")
-
-def is_admin(email):
-    user = get_user_by_email(email)
-    return user and user["role"] == "admin"
+def register(nom, prenom, telephone, password):
+    if not is_valid_phone(telephone):
+        return False, "Numéro de téléphone invalide"
+    return create_user(nom, prenom, telephone, password, role="user")
